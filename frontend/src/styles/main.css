@@ -1,0 +1,122 @@
+:root {
+  --primary: #6366f1;
+  --secondary: #4f46e5;
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.header {
+  height: 64px;
+  background: linear-gradient(90deg, var(--secondary), var(--primary));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  color: white;
+  box-shadow: 0 6px 25px rgba(0,0,0,.15);
+}
+
+.header a, .header span {
+  color: white;
+  text-decoration: none;
+  margin-left: 22px;
+  font-weight: 500;
+  transition: .3s;
+}
+
+.header a:hover, .header span:hover {
+  opacity: .8;
+}
+
+.footer {
+  background: #020617;
+  color: #94a3b8;
+  text-align: center;
+  padding: 14px;
+}
+
+.main {
+  min-height: calc(100vh - 110px);
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.page-box {
+  width: 420px;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 36px;
+  box-shadow: 0 30px 70px rgba(0,0,0,.1);
+  animation: fadeIn .5s ease;
+}
+
+.dashboard {
+  max-width: 1200px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(320px,1fr));
+  gap: 28px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.08);
+  transition: .3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 40px 90px rgba(0,0,0,.12);
+}
+
+button {
+  background: linear-gradient(135deg,var(--secondary),var(--primary));
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: .3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(99,102,241,.5);
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  margin: 10px 0;
+  transition: .2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.2);
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform: translateY(15px);}
+  to {opacity:1; transform: translateY(0);}
+}
