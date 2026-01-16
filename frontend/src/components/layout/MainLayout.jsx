@@ -71,7 +71,7 @@ const MainLayout = () => { // REMOVE { children } prop
 
   const isActive = (path) => location.pathname === path;
 
-  const navigationItems = [
+  let navigationItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Video Support', icon: <VideoCall />, path: '/support/video' },
     { text: 'Audio Support', icon: <Call />, path: '/support/audio' },
@@ -86,7 +86,8 @@ const MainLayout = () => { // REMOVE { children } prop
   }
 
   if (user?.role === 'supporter') {
-    navigationItems.push({ text: 'Contributor', icon: <SupportAgent />, path: '/contributor' });
+    navigationItems = []
+    navigationItems.push({ text: 'Dashboard', icon: <SupportAgent />, path: '/contributor' });
   }
 
   const drawerContent = (
@@ -186,7 +187,7 @@ const MainLayout = () => { // REMOVE { children } prop
         <Button
           fullWidth
           variant="outlined"
-          onClick={() => navigate('/')}
+          onClick={() => handleLogout()}
           sx={{ mb: 2 }}
         >
           Logout

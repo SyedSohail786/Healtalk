@@ -1,26 +1,19 @@
-// middleware/auth.js - Update the authMiddleware function
+// middleware/auth.js
+const jwt = require('jsonwebtoken');
+const db = require('../config/db');
+
 const authMiddleware = (req, res, next) => {
   // Get token from header
-  let token;
+  const authHeader = req.headers.authorization;
   
-  // Check Authorization header (case-insensitive)
-  const authHeader = req.headers.authorization || req.headers.Authorization;
-  
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-  }
-  
-  // Also check token in query string (for testing)
-  if (!token && req.query.token) {
-    token = req.query.token;
-  }
-  
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ 
       success: false, 
       error: 'No token, authorization denied' 
     });
   }
+
+  const token = authHeader.split(' ')[1];
 
   try {
     // Verify token
@@ -64,12 +57,6 @@ const authMiddleware = (req, res, next) => {
           ...decoded
         };
         
-        console.log('User authenticated:', { 
-          id: req.user.id, 
-          name: req.user.name, 
-          role: req.user.role 
-        });
-        
         next();
       }
     );
@@ -96,3 +83,26 @@ const authMiddleware = (req, res, next) => {
     });
   }
 };
+
+// Optional: Role-based middleware
+const requireRole = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'User not authenticated' 
+      });
+    }
+    
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Insufficient permissions' 
+      });
+    }
+    
+    next();
+  };
+};
+
+module.exports = { authMiddleware, requireRole };

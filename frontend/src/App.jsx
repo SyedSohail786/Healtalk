@@ -27,6 +27,7 @@ import ArticlesPage from './pages/resources/ArticlesPage';
 import ProductsPage from './pages/store/ProductsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ContributorDashboard from './pages/contributor/ContributorDashboard';
+import SupporterDashboard from './pages/SupporterDashboard';
 
 // Create a theme
 const theme = createTheme({
@@ -63,7 +64,7 @@ function App() {
           <AuthProvider>
             <ErrorBoundary>
               <Router>
-                <Toaster 
+                <Toaster
                   position="top-right"
                   toastOptions={{
                     duration: 4000,
@@ -86,7 +87,7 @@ function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<LandingPage />} />
-                  
+
                   {/* Auth Routes */}
                   <Route element={<AuthLayout />}>
                     <Route path="/login" element={<LoginPage />} />
@@ -104,6 +105,8 @@ function App() {
                       <Route path="/groups" element={<GroupsPage />} />
                       <Route path="/articles" element={<ArticlesPage />} />
                       <Route path="/products" element={<ProductsPage />} />
+                      {/* Add supporter dashboard route */}
+                      <Route path="/supporter/dashboard" element={<SupporterDashboard />} />
                     </Route>
                   </Route>
 
@@ -114,10 +117,10 @@ function App() {
                     </Route>
                   </Route>
 
-                  {/* Contributor Routes */}
+                  {/* Contributor/Supporter Routes - Update this */}
                   <Route element={<ProtectedRoute allowedRoles={['supporter']} />}>
                     <Route element={<MainLayout />}>
-                      <Route path="/contributor" element={<ContributorDashboard />} />
+                      <Route path="/contributor" element={<SupporterDashboard />} />
                     </Route>
                   </Route>
 

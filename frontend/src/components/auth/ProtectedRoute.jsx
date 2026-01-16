@@ -1,43 +1,34 @@
+// components/auth/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Box, CircularProgress } from '@mui/material';
+import { CircularProgress, Box } from '@mui/material';
 
-const ProtectedRoute = ({ allowedRoles = [] }) => {
-  const { user, isAuthenticated, loading } = useAuth();
-
-  console.log('ProtectedRoute debug:', { 
-    user, 
-    isAuthenticated, 
-    loading,
-    token: localStorage.getItem('authToken')
-  }); // Debug
+const ProtectedRoute = ({ allowedRoles = ['user', 'supporter', 'admin'] }) => {
+  const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
       </Box>
     );
   }
 
   if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
-  // If specific roles are required, check user role
-  if (allowedRoles.length > 0) {
-    const userRole = user?.role || 'user';
-    if (!allowedRoles.includes(userRole)) {
-      return <Navigate to="/dashboard" replace />;
+  // Check if user has required role
+  if (!allowedRoles.includes(user?.role)) {
+    // Redirect based on role
+    switch(user?.role) {
+      case 'admin':
+        return <Navigate to="/admin" replace />;
+      case 'supporter':
+        return <Navigate to="/contributor" replace />;
+      default:
+        return <Navigate to="/dashboard" replace />;
     }
   }
 

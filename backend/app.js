@@ -1,3 +1,4 @@
+// app.js
 const express = require("express");
 const cors = require("cors");
 
@@ -6,6 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Import routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/roles", require("./routes/roleRoutes"));
 app.use("/api/supporters", require("./routes/supporterRoutes"));
@@ -16,6 +18,6 @@ app.use("/api/articles", require("./routes/articleRoutes"));
 app.use("/api/feedback", require("./routes/feedbackRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
-
+app.use("/api/sessions", require("./routes/sessionRoutes"));
 
 module.exports = app;

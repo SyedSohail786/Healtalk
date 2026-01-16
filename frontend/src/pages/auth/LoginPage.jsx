@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// LoginPage.jsx
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -6,19 +7,13 @@ import {
   Button,
   Typography,
   Box,
-  Alert,
-  InputAdornment,
-  IconButton,
   Link,
-  Divider,
+  Grid,
+  Alert,
+  CircularProgress,
+  Card,
+  CardContent,
 } from '@mui/material';
-import {
-  Email,
-  Lock,
-  Visibility,
-  VisibilityOff,
-  Psychology,
-} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -26,195 +21,230 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import {
+  Person as PersonIcon,
+  SupportAgent as SupporterIcon,
+  AdminPanelSettings as AdminIcon,
+} from '@mui/icons-material';
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  password: yup.string().required('Password is required'),
 });
 
 const LoginPage = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
+  const [loginType, setLoginType] = useState('user');
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
+    reset,
   } = useForm({
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = async (data) => {
-    setLoading(true);
-    const result = await login(data.email, data.password);
-    setLoading(false);
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      redirectBasedOnRole(user.role);
+    }
+  }, [isAuthenticated, user, navigate]);
 
-    if (result.success) {
-      toast.success('Login successful!');
-      navigate('/dashboard');
-    } else {
-      toast.error(result.error || 'Login failed');
+  const redirectBasedOnRole = (role) => {
+    switch(role) {
+      case 'admin':
+        navigate('/admin/dashboard');
+        break;
+      case 'supporter':
+        navigate('/supporter/dashboard');
+        break;
+      default:
+        navigate('/dashboard');
     }
   };
 
+  const onSubmit = async (data) => {
+    try {
+      const result = await login(data.email, data.password);
+      
+      if (result.success && result.user) {
+        toast.success(`Welcome back, ${result.user.name}!`);
+        redirectBasedOnRole(result.user.role);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Login failed. Please check your credentials.');
+    }
+  };
+
+  const loginTypes = [
+    {
+      value: 'user',
+      label: 'User Login',
+      description: 'Login as a regular user to access support',
+      icon: <PersonIcon sx={{ fontSize: 40 }} />,
+      color: 'primary',
+    },
+    {
+      value: 'supporter',
+      label: 'Supporter Login',
+      description: 'Login as a peer supporter to help others',
+      icon: <SupporterIcon sx={{ fontSize: 40 }} />,
+      color: 'secondary',
+    },
+    {
+      value: 'admin',
+      label: 'Admin Login',
+      description: 'Login as an administrator to manage the platform',
+      icon: <AdminIcon sx={{ fontSize: 40 }} />,
+      color: 'error',
+    },
+  ];
+
+  if (authLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+    <Container maxWidth="md" sx={{ py: 8 }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        style={{ width: '100%' }}
       >
         <Paper
-          elevation={0}
+          elevation={3}
           sx={{
             p: { xs: 3, md: 6 },
             borderRadius: 4,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
           }}
         >
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Box
-              sx={{
-                width: 60,
-                height: 60,
-                borderRadius: '50%',
-                bgcolor: 'primary.light',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mx: 'auto',
-                mb: 2,
-              }}
-            >
-              <Psychology sx={{ fontSize: 32, color: 'white' }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-              Welcome Back
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
+              Welcome to HealTalk
             </Typography>
             <Typography color="text.secondary">
-              Sign in to continue your mental wellness journey
+              Sign in to access your account
             </Typography>
           </Box>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Box sx={{ mb: 3 }}>
-              <TextField
-                fullWidth
-                label="Email Address"
-                type="email"
-                {...register('email')}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-            </Box>
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" gutterBottom>
+                Select Login Type
+              </Typography>
+              <Typography color="text.secondary" sx={{ mb: 3 }}>
+                Choose how you want to login
+              </Typography>
 
-            <Box sx={{ mb: 3 }}>
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                {...register('password')}
-                error={!!errors.password}
-                helperText={errors.password?.message}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
+              <Grid container spacing={2}>
+                {loginTypes.map((type) => (
+                  <Grid item xs={12} key={type.value}>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Card
+                        sx={{
+                          cursor: 'pointer',
+                          border: loginType === type.value ? `2px solid` : '1px solid #e0e0e0',
+                          borderColor: loginType === type.value ? `${type.color}.main` : 'divider',
+                          bgcolor: loginType === type.value ? `${type.color}.light` : 'background.paper',
+                          transition: 'all 0.3s',
+                        }}
+                        onClick={() => setLoginType(type.value)}
                       >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-            </Box>
+                        <CardContent sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
+                          <Box
+                            sx={{
+                              color: `${type.color}.main`,
+                              mr: 2,
+                            }}
+                          >
+                            {type.icon}
+                          </Box>
+                          <Box>
+                            <Typography variant="subtitle1" fontWeight={600}>
+                              {type.label}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {type.description}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
 
-            <Box sx={{ mb: 3, textAlign: 'right' }}>
-              <Link
-                component={RouterLink}
-                to="/forgot-password"
-                variant="body2"
-                sx={{ textDecoration: 'none' }}
-              >
-                Forgot password?
+              {loginType === 'admin' && (
+                <Alert severity="warning" sx={{ mt: 3 }}>
+                  Admin login requires special permissions.
+                </Alert>
+              )}
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <Typography variant="h6" gutterBottom>
+                  Login Credentials
+                </Typography>
+
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  type="email"
+                  {...register('email')}
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                  disabled={isSubmitting}
+                  sx={{ mb: 3 }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  {...register('password')}
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  disabled={isSubmitting}
+                  sx={{ mb: 3 }}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={isSubmitting}
+                  sx={{ py: 1.5, borderRadius: 2 }}
+                >
+                  {isSubmitting ? 'Signing in...' : `Sign in as ${loginType}`}
+                </Button>
+
+                <Box sx={{ mt: 2, textAlign: 'center' }}>
+                  <Link component={RouterLink} to="/forgot-password" sx={{ fontSize: '0.875rem' }}>
+                    Forgot password?
+                  </Link>
+                </Box>
+              </form>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Don't have an account?{' '}
+              <Link component={RouterLink} to="/register" sx={{ fontWeight: 600 }}>
+                Create account
               </Link>
-            </Box>
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={loading}
-              sx={{
-                py: 1.5,
-                borderRadius: 2,
-                fontSize: '1rem',
-                fontWeight: 600,
-                mb: 3,
-              }}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-
-            <Divider sx={{ my: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                OR
-              </Typography>
-            </Divider>
-
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Don't have an account?{' '}
-                <Link
-                  component={RouterLink}
-                  to="/register"
-                  sx={{ fontWeight: 600, textDecoration: 'none' }}
-                >
-                  Sign up
-                </Link>
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Need help?{' '}
-                <Link
-                  component={RouterLink}
-                  to="/support"
-                  sx={{ textDecoration: 'none' }}
-                >
-                  Contact Support
-                </Link>
-              </Typography>
-            </Box>
-          </form>
+            </Typography>
+          </Box>
         </Paper>
       </motion.div>
     </Container>

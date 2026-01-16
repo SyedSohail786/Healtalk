@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react'; // Added useEffect
 import {
   Container,
   Typography,
@@ -7,7 +7,6 @@ import {
   Box,
   Card,
   CardContent,
-  CardActions,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -21,10 +20,38 @@ import {
   MedicalServices,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; // Assuming AuthContext is in contexts folder
 
 const LandingPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth(); // Get auth state
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (isAuthenticated && !loading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  // Show loading or nothing while checking authentication
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        {/* You can add a loading spinner here */}
+      </Box>
+    );
+  }
+
+  // Don't render the landing page if user is authenticated
+  if (isAuthenticated) {
+    return null; // or a redirect component
+  }
 
   const features = [
     {

@@ -27,6 +27,7 @@
     "react-hot-toast": "^2.6.0",
     "react-loader-spinner": "^5.4.5",
     "react-router-dom": "^6.30.3",
+    "socket.io-client": "^4.8.3",
     "yup": "^1.7.1"
   },
   "devDependencies": {

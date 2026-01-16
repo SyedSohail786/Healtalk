@@ -77,7 +77,7 @@ const Navigation = ({ children }) => {
     { text: 'Chat Support', icon: <Chat />, path: '/support/chat' },
     { text: 'Groups', icon: <Groups />, path: '/groups' },
     { text: 'Articles', icon: <Article />, path: '/articles' },
-    { text: 'Products', icon: <ShoppingCart />, path: '/products' },
+    // { text: 'Products', icon: <ShoppingCart />, path: '/products' },
   ];
 
   if (user?.role === 'admin') {
