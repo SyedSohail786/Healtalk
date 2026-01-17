@@ -1171,10 +1171,6 @@ const AdminDashboard = () => {
                     ))}
                   </Select>
                 </FormControl>
-                <Button variant="outlined" component="label" startIcon={<Upload />} sx={{ mb: 2 }}>
-                  Upload Image
-                  <input type="file" hidden accept="image/*" onChange={(e) => setArticleForm({ ...articleForm, image: e.target.files[0] })} />
-                </Button>
               </Box>
             )}
 
