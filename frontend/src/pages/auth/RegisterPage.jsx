@@ -182,14 +182,7 @@ const RegisterPage = () => {
       description: 'Register as a trained peer supporter to help others in the community',
       icon: <SupporterIcon sx={{ fontSize: 40 }} />,
       color: 'secondary',
-    },
-    {
-      value: 'admin',
-      label: 'Administrator',
-      description: 'Register as an administrator to manage the platform',
-      icon: <AdminIcon sx={{ fontSize: 40 }} />,
-      color: 'error',
-    },
+    }
   ];
 
   return (

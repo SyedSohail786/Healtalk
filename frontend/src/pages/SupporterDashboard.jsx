@@ -158,13 +158,13 @@ const SupporterDashboard = () => {
 
                     // Join supporter room with correct ID
                     // IMPORTANT: Use supporter_id from user object
-                    const supporterId = user.supporter_id || user.id;
+                    const supporterId = user.supporter_id || user.userId;
                     newSocket.emit('join-supporter', supporterId);
 
                     console.log('Supporter joined room:', supporterId);
 
                     // Also join user's personal room for receiving messages
-                    newSocket.emit('join-user', user.id);
+                    newSocket.emit('join-user', user.userId);
 
                     // Join all existing chat session rooms
                     activeChats.forEach(chat => {
@@ -188,9 +188,9 @@ const SupporterDashboard = () => {
                     setIsSocketConnected(true);
 
                     // Rejoin rooms after reconnection
-                    const supporterId = user.supporter_id || user.id;
+                    const supporterId = user.supporter_id || user.userId;
                     newSocket.emit('join-supporter', supporterId);
-                    newSocket.emit('join-user', user.id);
+                    newSocket.emit('join-user', user.userId);
 
                     activeChats.forEach(chat => {
                          newSocket.emit('join-session', chat.session_id);
@@ -264,7 +264,7 @@ const SupporterDashboard = () => {
 
                if (user) {
                     // Try different possible ID properties
-                    userId = user.id || user.user_id || user._id || user.userId;
+                    userId = user.userId || user.user_id || user._id || user.userId;
 
                     // If still not found, try to parse from any property
                     if (!userId) {
@@ -333,6 +333,8 @@ const SupporterDashboard = () => {
                     headers: { Authorization: `Bearer ${token}` }
                });
 
+               console.log('RAW MESSAGES RESPONSE:', JSON.stringify(response.data, null, 2));
+               
                if (response.data.success) {
                     console.log('Messages fetched:', response.data.messages);
 
@@ -346,14 +348,13 @@ const SupporterDashboard = () => {
                     }));
 
                     setChatMessages(formattedMessages);
-
                     // Mark messages as read
-                    const unreadMessages = formattedMessages.filter(msg => !msg.is_read && msg.sender_id !== user.id);
+                    const unreadMessages = formattedMessages.filter(msg => !msg.is_read && msg.sender_id !== user.userId);
                     if (unreadMessages.length > 0 && socket) {
                          unreadMessages.forEach(msg => {
                               socket.emit('message-read', {
                                    messageId: msg.message_id,
-                                   readerId: user.id
+                                   readerId: user.userId
                               });
                          });
                     }
@@ -367,17 +368,9 @@ const SupporterDashboard = () => {
      const isMessageFromCurrentUser = (senderId) => {
           if (!user || !senderId) return false;
 
-          // Debug: Check what IDs we're comparing
-          console.log('isMessageFromCurrentUser - Debug:', {
-               senderId: senderId,
-               userId: user.id,
-               user_user_id: user.user_id,
-               supporter_id: user.supporter_id,
-               isMatch: senderId === user.id || senderId === user.user_id
-          });
 
-          // Compare with user.id
-          return senderId === user.id || senderId === user.user_id;
+          // Compare with user.userId
+          return senderId === user.userId || senderId === user.user_id;
      };
 
      const handleNewMessage = (data) => {
@@ -393,17 +386,17 @@ const SupporterDashboard = () => {
                     content: data.message,
                     message_type: data.messageType,
                     created_at: data.timestamp,
-                    is_read: data.senderId === user.id ? 1 : 0,
+                    is_read: data.senderId === user.userId ? 1 : 0,
                     is_sender: isMessageFromCurrentUser(data.senderId)
                };
 
                setChatMessages(prev => [...prev, newMessage]);
 
                // Send read receipt if message is from other user
-               if (data.senderId !== user.id && socket) {
+               if (data.senderId !== user.userId && socket) {
                     socket.emit('message-read', {
                          messageId: data.messageId,
-                         readerId: user.id
+                         readerId: user.userId
                     });
                }
           }
@@ -415,7 +408,7 @@ const SupporterDashboard = () => {
                          ...chat,
                          last_message: data.message,
                          last_message_time: data.timestamp,
-                         unread_count: chat.unread_count + (data.senderId !== user.id ? 1 : 0),
+                         unread_count: chat.unread_count + (data.senderId !== user.userId ? 1 : 0),
                     };
                }
                return chat;
@@ -423,7 +416,7 @@ const SupporterDashboard = () => {
 
           // Show notification for new messages not in current chat
           if (!selectedChat || selectedChat.session_id !== data.sessionId) {
-               if (data.senderId !== user.id) {
+               if (data.senderId !== user.userId) {
                     toast.info(`New message from ${data.senderName}`);
                }
           }
@@ -444,7 +437,7 @@ const SupporterDashboard = () => {
           const newMessage = {
                message_id: tempMessageId,
                session_id: selectedChat.session_id,
-               sender_id: user.id, // Use user.id
+               sender_id: user.userId, // Use user.userId
                sender_name: user.name,
                content: message.trim(),
                message_type: 'text',
@@ -454,10 +447,9 @@ const SupporterDashboard = () => {
           };
 
           setChatMessages(prev => [...prev, newMessage]);
-
           const messageData = {
                sessionId: selectedChat.session_id,
-               senderId: user.id, // Use user.id
+               senderId: user.userId, // Use user.userId
                senderName: user.name,
                receiverId: selectedChat.user_id,
                message: message.trim(),
@@ -476,7 +468,7 @@ const SupporterDashboard = () => {
           if (socket) {
                socket.emit('typing', {
                     sessionId: selectedChat.session_id,
-                    userId: user.id,
+                    userId: user.userId,
                     isTyping: false
                });
           }
@@ -538,7 +530,7 @@ const SupporterDashboard = () => {
                     if (socket && isSocketConnected) {
                          socket.emit('start-session', {
                               sessionId: selectedSession.session_id,
-                              supporterId: user.id,
+                              supporterId: user.userId,
                               userId: selectedSession.user_id,
                               sessionType: selectedSession.session_type
                          });
@@ -558,7 +550,7 @@ const SupporterDashboard = () => {
 
           socket.emit('typing', {
                sessionId: selectedChat.session_id,
-               userId: user.id,
+               userId: user.userId,
                isTyping: true
           });
 
@@ -567,7 +559,7 @@ const SupporterDashboard = () => {
           window.typingTimeout = setTimeout(() => {
                socket.emit('typing', {
                     sessionId: selectedChat.session_id,
-                    userId: user.id,
+                    userId: user.userId,
                     isTyping: false
                });
           }, 2000);
@@ -844,16 +836,6 @@ const SupporterDashboard = () => {
                                                   chatMessages.map((msg) => {
                                                        // Determine if message is from current user
                                                        const isCurrentUser = isMessageFromCurrentUser(msg.sender_id);
-
-                                                       // Debug log
-                                                       console.log('SupporterDashboard Message Alignment Debug:', {
-                                                            messageId: msg.message_id,
-                                                            senderId: msg.sender_id,
-                                                            userId: user?.id,
-                                                            user_user_id: user?.user_id,
-                                                            isCurrentUser: isCurrentUser,
-                                                            content: msg.content
-                                                       });
 
                                                        return (
                                                             <Box

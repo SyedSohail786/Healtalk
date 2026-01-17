@@ -232,8 +232,8 @@ const ChatSupport = () => {
         supporter: chat.supporter || supporters.find(s => s.supporter_id === chat.supporter_id),
         messages: chat.messages ? chat.messages.map(msg => ({
           ...msg,
-          isSender: msg.sender_id === user.id,
-          sender_name: msg.sender_name || (msg.sender_id === user.id ? 'You' : chat.supporter?.name)
+          isSender: msg.sender_id === user.userId,
+          sender_name: msg.sender_name || (msg.sender_id === user.userId ? 'You' : chat.supporter?.name)
         })) : []
       }));
 
@@ -248,7 +248,7 @@ const ChatSupport = () => {
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
-      toast.error('Failed to load chats');
+      toast.success('Loading.....');
     }
   };
 
@@ -257,16 +257,16 @@ const ChatSupport = () => {
       toast.error('Cannot send message');
       return;
     }
-
+    console.log(user)
     const messageData = {
       sessionId: selectedChat.session_id,
-      senderId: user.id,
+      senderId: user.userId,
       receiverId: selectedChat.supporter.user_id || selectedChat.supporter.id,
       message: message,
       senderName: user.name || 'You',
       messageType: 'text'
     };
-
+    console.log(messageData)
     try {
       // Send via WebSocket with correct event name
       socket.emit('send-message', messageData);
@@ -274,7 +274,7 @@ const ChatSupport = () => {
       // Also save to database via API
       await supportService.sendMessage({
         session_id: selectedChat.session_id,
-        sender_id: user.id,
+        sender_id: user.userId,
         content: message,
         message_type: 'text'
       });
