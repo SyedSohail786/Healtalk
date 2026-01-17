@@ -397,7 +397,7 @@ const ArticlesPage = () => {
                                 <CardMedia
                                   component="img"
                                   height="240"
-                                  image={`https://images.unsplash.com/photo-${150 + index}?auto=format&fit=crop&w=800`}
+                                  image={`https://fatstacksblog.com/wp-content/uploads/2019/11/Person-writing-article-nov26.jpg`}
                                   alt={article.title}
                                   sx={{ objectFit: 'cover', height: '100%' }}
                                 />
