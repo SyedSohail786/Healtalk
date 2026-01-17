@@ -37,6 +37,7 @@ import {
   ListItemText,
   Tooltip, // MUI Tooltip
   CircularProgress,
+  FormControlLabel,
 } from '@mui/material';
 import {
   AdminPanelSettings,
@@ -86,17 +87,17 @@ import {
 import { motion } from 'framer-motion';
 import axios from 'axios';
 // Rename the Tooltip import from chart.js to avoid conflict
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  PointElement, 
-  LineElement, 
-  Title, 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
   Tooltip as ChartTooltip, // Renamed to avoid conflict
-  Legend, 
-  ArcElement 
+  Legend,
+  ArcElement
 } from 'chart.js';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 
@@ -115,17 +116,17 @@ const api = {
   deleteUser: (id) => axios.delete(`${API_BASE_URL}/admin/users/${id}`),
   assignRole: (userId, roleId) => axios.post(`${API_BASE_URL}/admin/users/${userId}/role`, { roleId }),
 
-  // Articles
-  getArticles: () => axios.get(`${API_BASE_URL}/articles`),
-  createArticle: (articleData) => axios.post(`${API_BASE_URL}/articles/add`, articleData),
-  updateArticle: (id, articleData) => axios.put(`${API_BASE_URL}/articles/${id}`, articleData),
-  deleteArticle: (id) => axios.delete(`${API_BASE_URL}/articles/${id}`),
+  // Articles - update to use admin routes
+  getArticles: () => axios.get(`${API_BASE_URL}/admin/articles`),
+  createArticle: (articleData) => axios.post(`${API_BASE_URL}/admin/articles`, articleData),
+  updateArticle: (id, articleData) => axios.put(`${API_BASE_URL}/admin/articles/${id}`, articleData),
+  deleteArticle: (id) => axios.delete(`${API_BASE_URL}/admin/articles/${id}`),
 
-  // Groups
-  getGroups: () => axios.get(`${API_BASE_URL}/groups`),
-  createGroup: (groupData) => axios.post(`${API_BASE_URL}/groups/create`, groupData),
-  updateGroup: (id, groupData) => axios.put(`${API_BASE_URL}/groups/${id}`, groupData),
-  deleteGroup: (id) => axios.delete(`${API_BASE_URL}/groups/${id}`),
+  // Groups - update to use admin routes
+  getGroups: () => axios.get(`${API_BASE_URL}/admin/groups`),
+  createGroup: (groupData) => axios.post(`${API_BASE_URL}/admin/groups`, groupData),
+  updateGroup: (id, groupData) => axios.put(`${API_BASE_URL}/admin/groups/${id}`, groupData),
+  deleteGroup: (id) => axios.delete(`${API_BASE_URL}/admin/groups/${id}`),
   getGroupMembers: (groupId) => axios.get(`${API_BASE_URL}/groups/${groupId}/members`),
   addGroupMember: (groupId, userId) => axios.post(`${API_BASE_URL}/groups/join`, { group_id: groupId, user_id: userId }),
   removeGroupMember: (groupId, userId) => axios.delete(`${API_BASE_URL}/groups/${groupId}/members/${userId}`),
@@ -146,11 +147,11 @@ const api = {
   updateRole: (id, roleData) => axios.put(`${API_BASE_URL}/admin/roles/${id}`, roleData),
   deleteRole: (id) => axios.delete(`${API_BASE_URL}/admin/roles/${id}`),
 
-  // Categories
-  getCategories: () => axios.get(`${API_BASE_URL}/categories`),
-  createCategory: (categoryData) => axios.post(`${API_BASE_URL}/categories/add`, categoryData),
-  updateCategory: (id, categoryData) => axios.put(`${API_BASE_URL}/categories/${id}`, categoryData),
-  deleteCategory: (id) => axios.delete(`${API_BASE_URL}/categories/${id}`),
+  // Categories - update to use admin routes
+  getCategories: () => axios.get(`${API_BASE_URL}/admin/categories`),
+  createCategory: (categoryData) => axios.post(`${API_BASE_URL}/admin/categories`, categoryData),
+  updateCategory: (id, categoryData) => axios.put(`${API_BASE_URL}/admin/categories/${id}`, categoryData),
+  deleteCategory: (id) => axios.delete(`${API_BASE_URL}/admin/categories/${id}`),
 
   // Supporters
   getSupporters: () => axios.get(`${API_BASE_URL}/admin/supporters`),
@@ -160,13 +161,13 @@ const api = {
   verifySupporter: (id) => axios.post(`${API_BASE_URL}/admin/supporters/${id}/verify`),
 
   // Reports
-  getReports: () => axios.get(`${API_BASE_URL}/reports`),
+  getReports: () => axios.get(`${API_BASE_URL}/admin/reports`),
   updateReportStatus: (id, status) => axios.put(`${API_BASE_URL}/reports/${id}/status`, { status }),
   deleteReport: (id) => axios.delete(`${API_BASE_URL}/reports/${id}`),
 
-  // Feedback
-  getFeedback: () => axios.get(`${API_BASE_URL}/feedback`),
-  deleteFeedback: (id) => axios.delete(`${API_BASE_URL}/feedback/${id}`),
+  // Feedback - update to use admin routes
+  getFeedback: () => axios.get(`${API_BASE_URL}/admin/feedback`),
+  deleteFeedback: (id) => axios.delete(`${API_BASE_URL}/admin/feedback/${id}`),
 
   // Notifications
   getNotifications: () => axios.get(`${API_BASE_URL}/admin/notifications`),
@@ -182,7 +183,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState([]);
-  
+
   // Data states
   const [users, setUsers] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -195,35 +196,35 @@ const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  
+
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  
+
   // Form states
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '', phone: '', role: 'user' });
   const [articleForm, setArticleForm] = useState({ title: '', content: '', created_by: '', image: null });
   const [groupForm, setGroupForm] = useState({ name: '', category_id: '', created_by: '' });
-  const [sessionForm, setSessionForm] = useState({ 
-    user_id: '', 
-    supporter_id: '', 
-    session_type: 'chat', 
-    scheduled_time: '', 
-    duration_minutes: 60, 
-    title: '', 
-    notes: '' 
+  const [sessionForm, setSessionForm] = useState({
+    user_id: '',
+    supporter_id: '',
+    session_type: 'chat',
+    scheduled_time: '',
+    duration_minutes: 60,
+    title: '',
+    notes: ''
   });
   const [roleForm, setRoleForm] = useState({ role_name: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '', description: '' });
-  const [supporterForm, setSupporterForm] = useState({ 
-    user_id: '', 
-    bio: '', 
-    experience: '', 
-    qualifications: '', 
-    status: 'pending', 
-    is_verified: false 
+  const [supporterForm, setSupporterForm] = useState({
+    user_id: '',
+    bio: '',
+    experience: '',
+    qualifications: '',
+    status: 'pending',
+    is_verified: false
   });
 
   useEffect(() => {
@@ -233,7 +234,7 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all data in parallel
       const [
         statsRes,
@@ -292,9 +293,9 @@ const AdminDashboard = () => {
     setDialogType(type);
     setSelectedItem(item);
     setEditMode(!!item);
-    
+
     // Reset forms based on type
-    switch(type) {
+    switch (type) {
       case 'user':
         setUserForm(item || { name: '', email: '', password: '', phone: '', role: 'user' });
         break;
@@ -305,14 +306,14 @@ const AdminDashboard = () => {
         setGroupForm(item || { name: '', category_id: '', created_by: '' });
         break;
       case 'session':
-        setSessionForm(item || { 
-          user_id: '', 
-          supporter_id: '', 
-          session_type: 'chat', 
-          scheduled_time: '', 
-          duration_minutes: 60, 
-          title: '', 
-          notes: '' 
+        setSessionForm(item || {
+          user_id: '',
+          supporter_id: '',
+          session_type: 'chat',
+          scheduled_time: '',
+          duration_minutes: 60,
+          title: '',
+          notes: ''
         });
         break;
       case 'role':
@@ -322,17 +323,17 @@ const AdminDashboard = () => {
         setCategoryForm(item || { name: '', description: '' });
         break;
       case 'supporter':
-        setSupporterForm(item || { 
-          user_id: '', 
-          bio: '', 
-          experience: '', 
-          qualifications: '', 
-          status: 'pending', 
-          is_verified: false 
+        setSupporterForm(item || {
+          user_id: '',
+          bio: '',
+          experience: '',
+          qualifications: '',
+          status: 'pending',
+          is_verified: false
         });
         break;
     }
-    
+
     setDialogOpen(true);
   };
 
@@ -585,7 +586,7 @@ const AdminDashboard = () => {
       completed: 'success',
       cancelled: 'error',
     };
-    
+
     const icons = {
       active: <CheckCircle sx={{ fontSize: 14 }} />,
       pending: <Warning sx={{ fontSize: 14 }} />,
@@ -596,7 +597,7 @@ const AdminDashboard = () => {
       offline: <Clear sx={{ fontSize: 14 }} />,
       busy: <Warning sx={{ fontSize: 14 }} />,
     };
-    
+
     return (
       <Chip
         icon={icons[status] || <Warning sx={{ fontSize: 14 }} />}
@@ -625,7 +626,7 @@ const AdminDashboard = () => {
 
   // Handler for dialog submit based on type
   const handleDialogSubmit = () => {
-    switch(dialogType) {
+    switch (dialogType) {
       case 'user':
         editMode ? handleUpdateUser() : handleCreateUser();
         break;
@@ -707,7 +708,7 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 4, borderBottom: 1, borderColor: 'divider' }}>
-          <Tab label="Overview" />
+          <Tab label="Activity" />
           <Tab label="Users" />
           <Tab label="Articles" />
           <Tab label="Groups" />
@@ -720,7 +721,7 @@ const AdminDashboard = () => {
         {/* Overview Tab */}
         {activeTab === 0 && (
           <Grid container spacing={3}>
-            <Grid item xs={12} lg={8}>
+            {/* <Grid item xs={12} lg={8}>
               <Card sx={{ borderRadius: 3, mb: 3 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
@@ -732,9 +733,9 @@ const AdminDashboard = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Grid> */}
 
-            <Grid item xs={12} lg={4}>
+            <Grid item xs={12} lg={12}>
               <Card sx={{ borderRadius: 3, mb: 3 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Recent Activity</Typography>
@@ -927,7 +928,6 @@ const AdminDashboard = () => {
                           <TableCell>Type</TableCell>
                           <TableCell>Scheduled Time</TableCell>
                           <TableCell>Status</TableCell>
-                          <TableCell align="right">Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -939,16 +939,6 @@ const AdminDashboard = () => {
                             <TableCell>{session.session_type}</TableCell>
                             <TableCell>{new Date(session.scheduled_time).toLocaleString()}</TableCell>
                             <TableCell>{getStatusChip(session.status)}</TableCell>
-                            <TableCell align="right">
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                                <Tooltip title="Edit">
-                                  <IconButton size="small" onClick={() => handleOpenDialog('session', session)}><Edit /></IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete">
-                                  <IconButton size="small"><Delete color="error" /></IconButton>
-                                </Tooltip>
-                              </Box>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -971,7 +961,6 @@ const AdminDashboard = () => {
                           <TableCell>Supporter</TableCell>
                           <TableCell>Start Time</TableCell>
                           <TableCell>Status</TableCell>
-                          <TableCell align="right">Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -982,16 +971,6 @@ const AdminDashboard = () => {
                             <TableCell>{supporters.find(s => s.supporter_id === session.supporter_id)?.name || session.supporter_id}</TableCell>
                             <TableCell>{new Date(session.start_time).toLocaleString()}</TableCell>
                             <TableCell>{getStatusChip(session.status)}</TableCell>
-                            <TableCell align="right">
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                                <Tooltip title="View Messages">
-                                  <IconButton size="small"><Visibility /></IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete">
-                                  <IconButton size="small" onClick={() => handleDeleteChatSession(session.session_id)}><Delete color="error" /></IconButton>
-                                </Tooltip>
-                              </Box>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -23,6 +23,17 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Search,
@@ -38,111 +49,43 @@ import {
   FilterList,
   Sort,
   ExpandMore,
+  Edit,
+  Delete,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const ArticlesPage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
-  const categories = [
-    { id: 'all', label: 'All', count: 48 },
-    { id: 'anxiety', label: 'Anxiety', count: 12 },
-    { id: 'depression', label: 'Depression', count: 8 },
-    { id: 'stress', label: 'Stress Management', count: 10 },
-    { id: 'mindfulness', label: 'Mindfulness', count: 6 },
-    { id: 'relationships', label: 'Relationships', count: 5 },
-    { id: 'self-care', label: 'Self-Care', count: 7 },
-  ];
+  const [newArticle, setNewArticle] = useState({
+    title: '',
+    content: '',
+    created_by: '',
+  });
 
-  const articles = [
-    {
-      id: 1,
-      title: '10 Mindfulness Techniques for Daily Anxiety',
-      excerpt: 'Learn simple mindfulness practices that can help reduce anxiety and bring peace to your daily life...',
-      author: 'Dr. Sarah Johnson',
-      authorRole: 'Clinical Psychologist',
-      readTime: '5 min read',
-      category: 'Anxiety',
-      date: 'Jan 15, 2024',
-      likes: 245,
-      comments: 42,
-      featured: true,
-      image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800',
-    },
-    {
-      id: 2,
-      title: 'Understanding Depression: A Comprehensive Guide',
-      excerpt: 'An in-depth look at depression symptoms, causes, and evidence-based treatment options...',
-      author: 'Michael Chen',
-      authorRole: 'Counselor',
-      readTime: '8 min read',
-      category: 'Depression',
-      date: 'Jan 12, 2024',
-      likes: 189,
-      comments: 31,
-      featured: false,
-      image: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=800',
-    },
-    {
-      id: 3,
-      title: 'Stress Management in the Modern Workplace',
-      excerpt: 'Practical strategies for managing work-related stress and maintaining mental wellbeing...',
-      author: 'Priya Sharma',
-      authorRole: 'Mindfulness Coach',
-      readTime: '6 min read',
-      category: 'Stress Management',
-      date: 'Jan 10, 2024',
-      likes: 312,
-      comments: 56,
-      featured: true,
-      image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800',
-    },
-    {
-      id: 4,
-      title: 'The Power of Gratitude Journaling',
-      excerpt: 'How maintaining a gratitude journal can transform your mental health and overall outlook on life...',
-      author: 'David Wilson',
-      authorRole: 'Trauma Specialist',
-      readTime: '4 min read',
-      category: 'Self-Care',
-      date: 'Jan 8, 2024',
-      likes: 167,
-      comments: 28,
-      featured: false,
-      image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800',
-    },
-    {
-      id: 5,
-      title: 'Building Resilience Through Adversity',
-      excerpt: 'Learn how to develop emotional resilience and bounce back stronger from life\'s challenges...',
-      author: 'Dr. Sarah Johnson',
-      authorRole: 'Clinical Psychologist',
-      readTime: '7 min read',
-      category: 'Mindfulness',
-      date: 'Jan 5, 2024',
-      likes: 278,
-      comments: 39,
-      featured: false,
-      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800',
-    },
-    {
-      id: 6,
-      title: 'Healthy Communication in Relationships',
-      excerpt: 'Essential communication skills for maintaining healthy relationships and resolving conflicts...',
-      author: 'Michael Chen',
-      authorRole: 'Counselor',
-      readTime: '6 min read',
-      category: 'Relationships',
-      date: 'Jan 3, 2024',
-      likes: 194,
-      comments: 45,
-      featured: false,
-      image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800',
-    },
+  const categories = [
+    { id: 'all', label: 'All' },
+    { id: 'anxiety', label: 'Anxiety' },
+    { id: 'depression', label: 'Depression' },
+    { id: 'stress', label: 'Stress Management' },
+    { id: 'mindfulness', label: 'Mindfulness' },
+    { id: 'relationships', label: 'Relationships' },
+    { id: 'self-care', label: 'Self-Care' },
   ];
 
   const trendingArticles = [
@@ -151,6 +94,45 @@ const ArticlesPage = () => {
     { title: 'Managing Social Anxiety in the Digital Age', views: '1.5k' },
     { title: 'Mindful Eating for Emotional Wellbeing', views: '1.2k' },
   ];
+
+  useEffect(() => {
+    // Get user data from localStorage
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      try {
+        const parsedData = JSON.parse(storedUserData);
+        setUserData(parsedData);
+        setNewArticle(prev => ({ ...prev, created_by: parsedData.id }));
+      } catch (error) {
+        console.error('Error parsing userData:', error);
+      }
+    }
+    
+    fetchArticles();
+    fetchUsers();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/articles`);
+      setArticles(response.data || []);
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+      showSnackbar('Failed to load articles', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/admin/users`);
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -164,17 +146,121 @@ const ArticlesPage = () => {
     navigate(`/articles/${articleId}`);
   };
 
+  const handleCreateArticle = async () => {
+    if (!newArticle.title.trim()) {
+      showSnackbar('Article title is required', 'error');
+      return;
+    }
+
+    if (!newArticle.content.trim()) {
+      showSnackbar('Article content is required', 'error');
+      return;
+    }
+
+    if (!userData?.id) {
+      showSnackbar('Please login to create articles', 'warning');
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/articles/add`, {
+        ...newArticle,
+        created_by: userData.id,
+      });
+      
+      if (response.data.message === 'Article added') {
+        showSnackbar('Article created successfully!', 'success');
+        setCreateDialogOpen(false);
+        setNewArticle({ title: '', content: '', created_by: userData.id });
+        fetchArticles(); // Refresh articles list
+      }
+    } catch (error) {
+      console.error('Error creating article:', error);
+      showSnackbar('Failed to create article', 'error');
+    }
+  };
+
+  const handleEditArticle = async () => {
+    if (!selectedArticle) return;
+
+    if (!selectedArticle.title.trim()) {
+      showSnackbar('Article title is required', 'error');
+      return;
+    }
+
+    if (!selectedArticle.content.trim()) {
+      showSnackbar('Article content is required', 'error');
+      return;
+    }
+
+    try {
+      const response = await axios.put(`${API_BASE_URL}/admin/articles/${selectedArticle.article_id}`, {
+        title: selectedArticle.title,
+        content: selectedArticle.content,
+      });
+      
+      if (response.data.success) {
+        showSnackbar('Article updated successfully!', 'success');
+        setEditDialogOpen(false);
+        setSelectedArticle(null);
+        fetchArticles(); // Refresh articles list
+      }
+    } catch (error) {
+      console.error('Error updating article:', error);
+      showSnackbar('Failed to update article', 'error');
+    }
+  };
+
+  const handleDeleteArticle = async (articleId) => {
+    if (!window.confirm('Are you sure you want to delete this article?')) return;
+
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/admin/articles/${articleId}`);
+      
+      if (response.data.success) {
+        showSnackbar('Article deleted successfully!', 'success');
+        fetchArticles(); // Refresh articles list
+      }
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      showSnackbar('Failed to delete article', 'error');
+    }
+  };
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   const filteredArticles = articles.filter(article => {
-    if (activeTab === 0) return true;
-    if (activeTab === 1) return article.featured;
-    if (activeTab === 2) return article.category === 'Anxiety';
-    if (activeTab === 3) return article.category === 'Depression';
+    if (activeTab === 0) return true; // All articles
+    if (activeTab === 1) return article.featured; // Featured (you might want to add a featured field to your database)
+    if (activeTab === 2) {
+      // You'll need to add categories to your articles table
+      return true; // Filter by category
+    }
     return true;
   }).filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.author.toLowerCase().includes(searchQuery.toLowerCase())
+    article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    article.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    users.find(u => u.user_id === article.created_by)?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Pagination logic
+  const itemsPerPage = 4;
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedArticles = filteredArticles.slice(startIndex, startIndex + itemsPerPage);
+  const totalPages = Math.ceil(filteredArticles.length / itemsPerPage);
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -237,6 +323,8 @@ const ArticlesPage = () => {
                   variant="contained"
                   startIcon={<Article />}
                   sx={{ flex: 1 }}
+                  onClick={() => setCreateDialogOpen(true)}
+                  disabled={!userData}
                 >
                   Write Article
                 </Button>
@@ -251,7 +339,7 @@ const ArticlesPage = () => {
             {categories.map((category) => (
               <Chip
                 key={category.id}
-                label={`${category.label} (${category.count})`}
+                label={category.label}
                 onClick={() => setActiveTab(category.id === 'all' ? 0 : categories.findIndex(c => c.id === category.id))}
                 color={activeTab === (category.id === 'all' ? 0 : categories.findIndex(c => c.id === category.id)) ? 'primary' : 'default'}
                 variant="filled"
@@ -273,132 +361,158 @@ const ArticlesPage = () => {
         <Grid container spacing={4}>
           {/* Main Content - Articles Grid */}
           <Grid item xs={12} lg={8}>
-            <Grid container spacing={4}>
-              {filteredArticles.map((article, index) => (
-                <Grid item xs={12} key={article.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
-                      <Grid container>
-                        <Grid item xs={12} md={4}>
-                          <CardMedia
-                            component="img"
-                            height="240"
-                            image={article.image}
-                            alt={article.title}
-                            sx={{ objectFit: 'cover', height: '100%' }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} md={8}>
-                          <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <Box sx={{ mb: 2 }}>
-                              <Chip
-                                label={article.category}
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                sx={{ mb: 2 }}
-                              />
-                              {article.featured && (
-                                <Chip
-                                  label="Featured"
-                                  size="small"
-                                  color="warning"
-                                  sx={{ ml: 1 }}
+            {paginatedArticles.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Article sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary">
+                  No articles found
+                </Typography>
+                {!userData && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Please login to create articles
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <>
+                <Grid container spacing={4}>
+                  {paginatedArticles.map((article, index) => {
+                    const author = users.find(u => u.user_id === article.created_by);
+                    const authorName = author?.author_name || 'Unknown Author';
+                    const authorInitials = authorName.split(' ').map(n => n[0]).join('');
+                    const excerpt = article.content?.substring(0, 150) + '...' || 'No content available';
+                    const readTime = Math.ceil((article.content?.length || 0) / 200); // Approx 200 words per minute
+                    
+                    return (
+                      <Grid item xs={12} key={article.article_id}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                        >
+                          <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
+                            <Grid container>
+                              {/* Article Image - You might want to add an image field to your articles table */}
+                              <Grid item xs={12} md={4}>
+                                <CardMedia
+                                  component="img"
+                                  height="240"
+                                  image={`https://images.unsplash.com/photo-${150 + index}?auto=format&fit=crop&w=800`}
+                                  alt={article.title}
+                                  sx={{ objectFit: 'cover', height: '100%' }}
                                 />
-                              )}
-                            </Box>
+                              </Grid>
+                              <Grid item xs={12} md={8}>
+                                <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <Chip
+                                      label={article.category || 'General'}
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                    />
+                                    {userData?.role === 'admin' && (
+                                      <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <IconButton 
+                                          size="small" 
+                                          onClick={() => {
+                                            setSelectedArticle(article);
+                                            setEditDialogOpen(true);
+                                          }}
+                                        >
+                                          <Edit fontSize="small" />
+                                        </IconButton>
+                                        <IconButton 
+                                          size="small" 
+                                          color="error"
+                                          onClick={() => handleDeleteArticle(article.article_id)}
+                                        >
+                                          <Delete fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    )}
+                                  </Box>
 
-                            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, lineHeight: 1.3 }}>
-                              {article.title}
-                            </Typography>
-
-                            <Typography color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
-                              {article.excerpt}
-                            </Typography>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar sx={{ width: 40, height: 40 }}>
-                                  {article.author.split(' ').map(n => n[0]).join('')}
-                                </Avatar>
-                                <Box>
-                                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                    {article.author}
+                                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, lineHeight: 1.3 }}>
+                                    {article.title}
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {article.authorRole}
-                                  </Typography>
-                                </Box>
-                              </Box>
 
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <Favorite sx={{ fontSize: 18, color: 'text.secondary' }} />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {article.likes}
+                                  <Typography color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                                    {excerpt}
                                   </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <Comment sx={{ fontSize: 18, color: 'text.secondary' }} />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {article.comments}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <Schedule sx={{ fontSize: 18, color: 'text.secondary' }} />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {article.readTime}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            </Box>
-                          </CardContent>
 
-                          <Divider />
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                      <Avatar sx={{ width: 40, height: 40 }}>
+                                        {authorInitials}
+                                      </Avatar>
+                                      <Box>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                          {authorName}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {new Date(article.created_at).toLocaleDateString()}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
 
-                          <CardActions sx={{ p: 2, justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <IconButton size="small">
-                                <Favorite />
-                              </IconButton>
-                              <IconButton size="small">
-                                <Bookmark />
-                              </IconButton>
-                              <IconButton size="small">
-                                <Share />
-                              </IconButton>
-                            </Box>
-                            <Button
-                              variant="contained"
-                              onClick={() => handleReadArticle(article.id)}
-                            >
-                              Read Article
-                            </Button>
-                          </CardActions>
-                        </Grid>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <Schedule sx={{ fontSize: 18, color: 'text.secondary' }} />
+                                        <Typography variant="body2" color="text.secondary">
+                                          {readTime} min read
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  </Box>
+                                </CardContent>
+
+                                <Divider />
+
+                                <CardActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <IconButton size="small">
+                                      <Favorite />
+                                    </IconButton>
+                                    <IconButton size="small">
+                                      <Bookmark />
+                                    </IconButton>
+                                    <IconButton size="small">
+                                      <Share />
+                                    </IconButton>
+                                  </Box>
+                                  <Button
+                                    variant="contained"
+                                    onClick={() => handleReadArticle(article.article_id)}
+                                  >
+                                    Read Article
+                                  </Button>
+                                </CardActions>
+                              </Grid>
+                            </Grid>
+                          </Card>
+                        </motion.div>
                       </Grid>
-                    </Card>
-                  </motion.div>
+                    );
+                  })}
                 </Grid>
-              ))}
-            </Grid>
 
-            {/* Pagination */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
-              <Pagination
-                count={5}
-                page={page}
-                onChange={handlePageChange}
-                color="primary"
-                size="large"
-                showFirstButton
-                showLastButton
-              />
-            </Box>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={page}
+                      onChange={handlePageChange}
+                      color="primary"
+                      size="large"
+                      showFirstButton
+                      showLastButton
+                    />
+                  </Box>
+                )}
+              </>
+            )}
           </Grid>
 
           {/* Sidebar */}
@@ -515,6 +629,82 @@ const ArticlesPage = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Create Article Dialog */}
+        <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Write New Article</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2 }}>
+              <TextField
+                fullWidth
+                label="Article Title"
+                value={newArticle.title}
+                onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
+                sx={{ mb: 3 }}
+              />
+              <TextField
+                fullWidth
+                label="Article Content"
+                multiline
+                rows={10}
+                value={newArticle.content}
+                onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
+                placeholder="Write your article content here..."
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleCreateArticle}>
+              Publish Article
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit Article Dialog */}
+        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Edit Article</DialogTitle>
+          <DialogContent>
+            {selectedArticle && (
+              <Box sx={{ pt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Article Title"
+                  value={selectedArticle.title}
+                  onChange={(e) => setSelectedArticle({ ...selectedArticle, title: e.target.value })}
+                  sx={{ mb: 3 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Article Content"
+                  multiline
+                  rows={10}
+                  value={selectedArticle.content}
+                  onChange={(e) => setSelectedArticle({ ...selectedArticle, content: e.target.value })}
+                  placeholder="Write your article content here..."
+                />
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleEditArticle}>
+              Update Article
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </motion.div>
     </Container>
   );
