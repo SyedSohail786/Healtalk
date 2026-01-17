@@ -19,5 +19,6 @@ app.use("/api/feedback", require("./routes/feedbackRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/sessions", require("./routes/sessionRoutes"));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 module.exports = app;
